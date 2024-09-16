@@ -1,11 +1,41 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import SearchBar from '../../components/searchBar/SearchBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
 
-export default function SearchScreen() {
+export default function SearchScreen () {
+
+  const[weatherData, setWeatherData] =useState([]);
+
+  useEffect ( () => {
+    const getWeatherData = async() =>{
+      const data = await AsyncStorage.getItem('weatherData');
+      // const data = data ? JSON.parse(data) : [];   
+      if(data ==null){
+        console.error('Failed to get data from AsyncStorage:');
+        Alert.alert('Failed to get data from AsyncStorage:');
+      }else{
+        setWeatherData(JSON.parse(data));
+      }
+    }
+  },[])
+
+  const cityWeatherData = () => {
+    return (
+      <View style ={styles.WeatherDataContainer}>
+
+      </View>
+    )
+  }
+
   return (
     <View style={styles.container}>
-      <Text>SearchScreen</Text>
-      <StatusBar style="auto" />
+      <ScrollView>
+        <Text style={styles.title}>Weather Search</Text>
+        <SearchBar />
+        <Text>aaa</Text>
+      </ScrollView>
     </View>
   );
 }
@@ -13,8 +43,19 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'absolute',
   },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: 'left',
+  },
+  WeatherDataContainer: {
+    flexDirection:'row',
+  }
 });
