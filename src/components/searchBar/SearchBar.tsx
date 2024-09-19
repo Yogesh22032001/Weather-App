@@ -100,14 +100,16 @@ export default function SearchBar() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 10,
-    backgroundColor: 'white',
+    backgroundColor: '#d1e5f4',
+    height:'20%',
+
   },
   input: {
     height: 40,
     width:330,
-    borderColor: '#ddd',
+    borderColor: 'red',
     borderWidth: 1,
     marginBottom: 10,
     borderRadius: 5,
