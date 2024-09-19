@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, TouchableOpacity, View, ImageBackground, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ImageBackground, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useNavigation } from '@react-navigation/native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import WeatherData from '../../api/WeatherDataAPI';
-import Swiper from 'react-native-swiper';
+import WeatherDataAPI from '../../api/WeatherDataAPI';
+
+// Import the interfaces from the new file
+import { WeatherData } from '../../constants/types'; 
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [weatherData, setWeatherData] = useState([]);
+  const [weatherData, setWeatherData] = useState<WeatherData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,13 +29,12 @@ export default function HomeScreen() {
         setWeatherData(data);
         const updatedData = [];
 
-        // Fetch weather data for each city-country pair sequentially
         for (const item of data) {
           try {
-            const weather = await WeatherData(item.city, item.country);
-            updatedData.push({ ...item, weather }); // Add weather data to each item
+            const weather = await WeatherDataAPI(item.city, item.country);
+            updatedData.push({ ...item, weather });
           } catch {
-            updatedData.push({ ...item, weather: null }); // Return null if there's an error
+            updatedData.push({ ...item, weather: null });
           }
         }
         setWeatherData(updatedData);
@@ -60,46 +61,37 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* <Text style={styles.text}>HomeScreen</Text> */}
-
-        {/* Loading Spinner */}
         {loading && <ActivityIndicator size="large" color="#007BFF" />}
 
-        {/* Display weather data */}
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {/* Swiper to show each city's weather data */}
-        <Swiper
-      style={styles.wrapper}
-      showsButtons={true}
-      showsPagination={true}
-      autoplay={false}
-      loop={false}
-      dotColor="red"
-      activeDotColor="#007BFF"
-    >
-    
-      {weatherData.map((item, index) => (
-        <View key={index} style={styles.slide}>
-          
-          <Text style={styles.dataText}>City: {item.city}</Text>
-          <Text style={styles.dataText}>Country: {item.country}</Text>
-          {item.weather ? (
-            <>
-              <Text style={styles.dataText}>
-                Temperature: {(item.weather.main.temp - 273.15).toFixed(2)} °C
-              </Text>
-              <Text style={styles.dataText}>id: {item.weather.weather[0].id}</Text>
-              <Text style={styles.dataText}>Weather: {item.weather.weather[0].description}</Text>
-            </>
-          ) : (
-            <Text style={styles.dataText}>Weather data not available</Text>
-          )}
-        </View>
-      ))}
-    </Swiper>
+        <ScrollView 
+          horizontal={true} // Enable horizontal scrolling
+          pagingEnabled={true} // Make it snap to each city "page"
+          showsHorizontalScrollIndicator={false}
+          style={styles.scrollView}
+        >
+          {weatherData.map((item, index) => (
+            <View key={index} style={styles.pageContainer}>
+              <Text style={styles.dataText}>City: {item.city}</Text>
+              <Text style={styles.dataText}>Country: {item.country}</Text>
+              {item.weather ? (
+                <>
+                  <Text style={styles.dataText}>
+                    Temperature: {(item.weather.main.temp - 273.15).toFixed(2)} °C
+                  </Text>
+                  <Text style={styles.dataText}>
+                    Weather: {item.weather.weather[0].description}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.dataText}>Weather data not available</Text>
+              )}
+            </View>
+          ))}
+        </ScrollView>
       </View>
-      {/* <StatusBar style="auto" /> */}
+      <StatusBar style="auto" />
     </ImageBackground>
   );
 }
@@ -114,7 +106,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    // Ensure the container does not interfere with background image
   },
   nav: {
     flexDirection: 'row',
@@ -124,32 +115,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     paddingTop: 40,
-    zIndex: 1, // Ensure the nav buttons are above other content
+    zIndex: 1,
   },
-  navButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  scrollView: {
+    marginTop: 100,
   },
-  buttonIcon: {
-    marginHorizontal: 10, // Adjust margin to ensure buttons are touching
-  },
-  wrapper: {
-    marginTop: 60,
-    height: '80%',
-    width: '100%',
-  },
-  slide: {
-    flex: 1,
+  pageContainer: {
+    width: Dimensions.get('window').width, // Each page takes up the full width of the screen
+    height: Dimensions.get('window').height * 0.7, // Optional: adjust height for proper scrolling feel
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    padding: 10,
+    padding: 20,
     borderRadius: 10,
-    margin: 10,
   },
   dataText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#000',
     marginBottom: 10,
   },

@@ -5,10 +5,10 @@ import { ScreenNavigation } from './src/navigation/AppNavigator';
 
 export default function App() {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar style="auto" />
       <ScreenNavigation />
-    </SafeAreaView>
+    </View>
   );
   // return <ScreenNavigation />;
 }
