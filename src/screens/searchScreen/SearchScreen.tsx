@@ -100,12 +100,11 @@ export default function SearchScreen() {
 
       <Text style={styles.title}>Weather Search</Text>
 
-      <View style={{ height: '28%' }}>
+      <View style={{ height: '28%',marginBottom:30 }}>
         <SearchBar />
       </View>
       <ScrollView>
 
-        <Text>aaa</Text>
         {
           weatherData.map((item) => {
             const isSelected = selectedCities.some(
