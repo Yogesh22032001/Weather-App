@@ -2,7 +2,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SearchBar from '../../components/searchBar/SearchBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import React,{ useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import WeatherDataAPI from '../../api/WeatherDataAPI';
 import { WeatherData } from '../../constants/types';
 
@@ -12,40 +13,49 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCities, setSelectedCities] = useState<{ city: string, country: string }[]>([]);
+  const [temperatureUnit, setTemperatureUnit] = useState('Celsius');
 
-  useEffect(() => {
-    console.warn('Selected Cities:', selectedCities);
-  }, [selectedCities]);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchStoredData = async () => {
+        try {
+          const existingData = await AsyncStorage.getItem('weatherData');
+          const data = existingData ? JSON.parse(existingData) : [];
+          const updatedData = [];
 
-  useEffect(() => {
-    const fetchStoredData = async () => {
-      try {
-        const existingData = await AsyncStorage.getItem('weatherData');
-        const data = existingData ? JSON.parse(existingData) : [];
-        console.warn(data);
-
-        setWeatherData(data);
-        const updatedData = [];
-
-        for (const item of data) {
-          try {
-            const weather = await WeatherDataAPI(item.city, item.country);
-            updatedData.push({ ...item, weather });
-          } catch {
-            updatedData.push({ ...item, weather: null });
+          for (const item of data) {
+            try {
+              const weather = await WeatherDataAPI(item.city, item.country);
+              updatedData.push({ ...item, weather });
+            } catch {
+              updatedData.push({ ...item, weather: null });
+            }
           }
+          setWeatherData(updatedData);
+        } catch (error) {
+          console.error('Failed to load data from AsyncStorage:', error);
+          setError('Failed to load data');
+        } finally {
+          setLoading(false);
         }
-        setWeatherData(updatedData);
-        setLoading(false);
-      } catch (error) {
-        console.error('Failed to load data from AsyncStorage:', error);
-        setError('Failed to load data');
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchStoredData();
-  }, []);
+      const loadUnitsFromStorage = async () => {
+        const savedTempUnit = await AsyncStorage.getItem('temperatureUnit');
+        if (savedTempUnit) setTemperatureUnit(savedTempUnit);    
+      };
+
+      fetchStoredData();
+      loadUnitsFromStorage();
+
+    }, [])
+  );
+
+  const convertTemperature = (tempInKelvin: number): number => {
+    return temperatureUnit === 'Celsius'
+      ? tempInKelvin - 273.15 // Kelvin to Celsius
+      : (tempInKelvin - 273.15) * 9 / 5 + 32; // Kelvin to Fahrenheit
+  };
 
   function handleLongPress(city: string, country: string) {
     console.warn("aaaaaaa");
@@ -110,7 +120,7 @@ export default function SearchScreen() {
                     <Text style={{ flex: 1 }}>{item.city}</Text>
                     <Text>{(item.weather?.wind.speed)}</Text>
                   </View>
-                  <Text> {(item.weather?.main.temp - 273.15).toFixed(2)} °C</Text>
+                  <Text> {convertTemperature(item.weather.main.temp).toFixed(2)} °{temperatureUnit === 'Celsius' ? 'C' : 'F'}</Text>
                 </View>
               </TouchableOpacity>
 

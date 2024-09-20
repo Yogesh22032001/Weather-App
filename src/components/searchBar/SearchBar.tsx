@@ -81,7 +81,7 @@ export default function SearchBar() {
       {loading && <ActivityIndicator size="large" color="#007BFF" />}
 
       {/* Display weather data */}
-      {weather && (
+      {/* {weather && (
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>City: {weather.name}</Text>
           <Text style={styles.resultText}>
@@ -89,7 +89,7 @@ export default function SearchBar() {
           </Text>
           <Text style={styles.resultText}>Weather: {weather.weather[0].description}</Text>
         </View>
-      )}
+      )} */}
 
       {/* Display error message */}
       {error && <Text style={styles.errorText}>{error}</Text>}

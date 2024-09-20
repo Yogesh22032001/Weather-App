@@ -3,13 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, TouchableOpacity, View, ImageBackground, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WeatherDataAPI from '../../api/WeatherDataAPI';
-
-// Import the interfaces from the new file
-import { WeatherData } from '../../constants/types'; 
+import { WeatherData } from '../../constants/types';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -18,36 +16,69 @@ export default function HomeScreen() {
   const [weatherData, setWeatherData] = useState<WeatherData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [temperatureUnit, setTemperatureUnit] = useState('Celsius');
+  const [windSpeedUnit, setWindSpeedUnit] = useState('Kilometers per hour');
 
   const imageSource = require('./../../../assets/images/weather.png');
 
-  useEffect(() => {
-    const fetchStoredData = async () => {
-      try {
-        const existingData = await AsyncStorage.getItem('weatherData');
-        const data = existingData ? JSON.parse(existingData) : [];
-        setWeatherData(data);
-        const updatedData = [];
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchStoredData = async () => {
+        try {
+          const existingData = await AsyncStorage.getItem('weatherData');
+          const data = existingData ? JSON.parse(existingData) : [];
+          const updatedData = [];
 
-        for (const item of data) {
-          try {
-            const weather = await WeatherDataAPI(item.city, item.country);
-            updatedData.push({ ...item, weather });
-          } catch {
-            updatedData.push({ ...item, weather: null });
+          for (const item of data) {
+            try {
+              const weather = await WeatherDataAPI(item.city, item.country);
+              updatedData.push({ ...item, weather });
+            } catch {
+              updatedData.push({ ...item, weather: null });
+            }
           }
+          setWeatherData(updatedData);
+        } catch (error) {
+          console.error('Failed to load data from AsyncStorage:', error);
+          setError('Failed to load data');
+        } finally {
+          setLoading(false);
         }
-        setWeatherData(updatedData);
-        setLoading(false);
-      } catch (error) {
-        console.error('Failed to load data from AsyncStorage:', error);
-        setError('Failed to load data');
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchStoredData();
-  }, []);
+      const loadUnitsFromStorage = async () => {
+        const savedTempUnit = await AsyncStorage.getItem('temperatureUnit');
+        const savedWindUnit = await AsyncStorage.getItem('windSpeedUnit');
+  
+        if (savedTempUnit) setTemperatureUnit(savedTempUnit);
+        if (savedWindUnit) setWindSpeedUnit(savedWindUnit);      
+      };
+
+      fetchStoredData();
+      loadUnitsFromStorage();
+
+    }, [])
+  );
+
+  const convertTemperature = (tempInKelvin: number): number => {
+    return temperatureUnit === 'Celsius'
+      ? tempInKelvin - 273.15 // Kelvin to Celsius
+      : (tempInKelvin - 273.15) * 9 / 5 + 32; // Kelvin to Fahrenheit
+  };
+
+  const convertWindSpeed = (speedInKmH: number): number => {
+    switch (windSpeedUnit) {
+      case 'Meters per second':
+        return speedInKmH * 0.27778; // km/h to m/s
+      case 'Miles per hour':
+        return speedInKmH * 0.621371; // km/h to mph
+      case 'Knots':
+        return speedInKmH * 0.539957; // km/h to knots
+      case 'Kilometers per hour':
+      default:
+        return speedInKmH; // No conversion needed
+    }
+  };
 
   return (
     <ImageBackground source={imageSource} style={styles.backgroundImage}>
@@ -62,12 +93,11 @@ export default function HomeScreen() {
         </View>
 
         {loading && <ActivityIndicator size="large" color="#007BFF" />}
-
         {error && <Text style={styles.errorText}>{error}</Text>}
 
         <ScrollView 
-          horizontal={true} // Enable horizontal scrolling
-          pagingEnabled={true} // Make it snap to each city "page"
+          horizontal={true} 
+          pagingEnabled={true} 
           showsHorizontalScrollIndicator={false}
           style={styles.scrollView}
         >
@@ -78,10 +108,13 @@ export default function HomeScreen() {
               {item.weather ? (
                 <>
                   <Text style={styles.dataText}>
-                    Temperature: {(item.weather.main.temp - 273.15).toFixed(2)} °C
+                    Temperature: {convertTemperature(item.weather.main.temp).toFixed(2)} °{temperatureUnit === 'Celsius' ? 'C' : 'F'}
                   </Text>
                   <Text style={styles.dataText}>
                     Weather: {item.weather.weather[0].description}
+                  </Text>
+                  <Text style={styles.dataText}>
+                    Wind Speed: {convertWindSpeed(item.weather.wind.speed).toFixed(2)} {windSpeedUnit}
                   </Text>
                 </>
               ) : (
@@ -121,8 +154,8 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   pageContainer: {
-    width: Dimensions.get('window').width, // Each page takes up the full width of the screen
-    height: Dimensions.get('window').height * 0.7, // Optional: adjust height for proper scrolling feel
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height * 0.7,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
