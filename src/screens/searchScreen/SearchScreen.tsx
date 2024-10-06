@@ -15,29 +15,60 @@ export default function SearchScreen() {
   const [selectedCities, setSelectedCities] = useState<{ city: string, country: string }[]>([]);
   const [temperatureUnit, setTemperatureUnit] = useState('Celsius');
 
+  const reloadWeatherData = async () => {
+    setLoading(true);
+    try {
+      const existingData = await AsyncStorage.getItem('weatherData');
+      const data = existingData ? JSON.parse(existingData) : [];
+      const updatedData = [];
+
+      for (const item of data) {
+        try {
+          const weather = await WeatherDataAPI(item.city, item.country);
+          updatedData.push({ ...item, weather });
+        } catch {
+          updatedData.push({ ...item, weather: null });
+        }
+      }
+      setWeatherData(updatedData);
+    } catch (error) {
+      console.error('Failed to load data from AsyncStorage:', error);
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
-      const fetchStoredData = async () => {
-        try {
-          const existingData = await AsyncStorage.getItem('weatherData');
-          const data = existingData ? JSON.parse(existingData) : [];
-          const updatedData = [];
+      // const fetchStoredData = async () => {
+      //   try {
+      //     const existingData = await AsyncStorage.getItem('weatherData');
+      //     // console.warn(existingData)
+      //     const data = existingData ? JSON.parse(existingData) : [];
+      //     const updatedData = [];
 
-          for (const item of data) {
-            try {
-              const weather = await WeatherDataAPI(item.city, item.country);
-              updatedData.push({ ...item, weather });
-            } catch {
-              updatedData.push({ ...item, weather: null });
-            }
-          }
-          setWeatherData(updatedData);
-        } catch (error) {
-          console.error('Failed to load data from AsyncStorage:', error);
-          setError('Failed to load data');
-        } finally {
-          setLoading(false);
-        }
+      //     for (const item of data) {
+      //       try {
+      //         const weather = await WeatherDataAPI(item.city, item.country);
+      //         // console.warn(weather)
+      //         updatedData.push({ ...item, weather });
+              
+      //       } catch {
+      //         updatedData.push({ ...item, weather: null });
+      //       }
+      //     }
+      //     setWeatherData(updatedData);
+      //   } catch (error) {
+      //     console.error('Failed to load data from AsyncStorage:', error);
+      //     setError('Failed to load data');
+      //   } finally {
+      //     setLoading(false);
+      //   }
+      // };
+
+      const fetchStoredData = async () => {
+        await reloadWeatherData(); // Fetch stored data and reload
       };
 
       const loadUnitsFromStorage = async () => {
@@ -48,7 +79,7 @@ export default function SearchScreen() {
       fetchStoredData();
       loadUnitsFromStorage();
 
-    }, [])
+    }, [SearchBar])
   );
 
   const convertTemperature = (tempInKelvin: number): number => {
@@ -58,12 +89,11 @@ export default function SearchScreen() {
   };
 
   function handleLongPress(city: string, country: string) {
-    console.warn("aaaaaaa");
     let exists = false;
     for (const item of selectedCities) {
       if (item.city === city && item.country === country) {
         exists = true;
-        break; // Exit the loop as soon as a match is found
+        break;
       }
     }
 

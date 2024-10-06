@@ -8,6 +8,7 @@ import IonIcon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WeatherDataAPI from '../../api/WeatherDataAPI';
 import { WeatherData } from '../../constants/types';
+import { data } from '../../constants/types';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -26,17 +27,21 @@ export default function HomeScreen() {
       const fetchStoredData = async () => {
         try {
           const existingData = await AsyncStorage.getItem('weatherData');
+          // console.warn(existingData)
           const data = existingData ? JSON.parse(existingData) : [];
           const updatedData = [];
 
           for (const item of data) {
+            console.warn(item)
             try {
               const weather = await WeatherDataAPI(item.city, item.country);
+              // console.warn("in home screen -- "+weather)
               updatedData.push({ ...item, weather });
             } catch {
-              updatedData.push({ ...item, weather: null });
+              // updatedData.push({ ...item, weather: null });
             }
           }
+          // console.warn(updatedData)
           setWeatherData(updatedData);
         } catch (error) {
           console.error('Failed to load data from AsyncStorage:', error);
@@ -51,7 +56,7 @@ export default function HomeScreen() {
         const savedWindUnit = await AsyncStorage.getItem('windSpeedUnit');
   
         if (savedTempUnit) setTemperatureUnit(savedTempUnit);
-        if (savedWindUnit) setWindSpeedUnit(savedWindUnit);      
+        if (savedWindUnit) setWindSpeedUnit(convertWindUnit(savedWindUnit));      
       };
 
       fetchStoredData();
@@ -76,8 +81,32 @@ export default function HomeScreen() {
         return speedInKmH * 0.539957; // km/h to knots
       case 'Kilometers per hour':
       default:
-        return speedInKmH; // No conversion needed
+        return speedInKmH;  
     }
+  };
+  const convertWindUnit = (unit) => {
+    switch(unit) {
+      case 'Meters per second':
+        return 'm/s';  
+      case 'Miles per hour':
+        return 'mph'; 
+      case 'Knots':
+        return 'knots';  
+      case 'Kilometers per hour':
+        return 'k/m';
+      // default:
+      //   return 'KmH';
+    }
+  }
+
+  function capitalizationFirstLatter(string){
+    return string.charAt(0).toUpperCase() + string.slice(1)
+  }
+
+  const getCountryName = (code:string) => {
+    const country = data.find(item2 => item2.value.toUpperCase() === code.trim());
+    console.warn("country ==="+country.label)
+     return country ? country.label : 'Country not found';
   };
 
   return (
@@ -103,12 +132,12 @@ export default function HomeScreen() {
         >
           {weatherData.map((item, index) => (
             <View key={index} style={styles.pageContainer}>
-              <Text style={styles.dataText}>City: {item.city}</Text>
-              <Text style={styles.dataText}>Country: {item.country}</Text>
+              <Text style={[styles.dataText,{fontSize:23}]}>{capitalizationFirstLatter(item.weather.name)}</Text>
+              <Text style={styles.dataText}>Country: {getCountryName(item.weather.sys.country)}</Text>
               {item.weather ? (
                 <>
-                  <Text style={styles.dataText}>
-                    Temperature: {convertTemperature(item.weather.main.temp).toFixed(2)} °{temperatureUnit === 'Celsius' ? 'C' : 'F'}
+                  <Text style={[styles.dataText,{fontSize:30}]}>
+                   {convertTemperature(item.weather.main.temp).toFixed(2)} °{temperatureUnit === 'Celsius' ? 'C' : 'F'}
                   </Text>
                   <Text style={styles.dataText}>
                     Weather: {item.weather.weather[0].description}
@@ -156,7 +185,7 @@ const styles = StyleSheet.create({
   pageContainer: {
     width: Dimensions.get('window').width,
     height: Dimensions.get('window').height * 0.7,
-    justifyContent: 'center',
+    // justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     padding: 20,

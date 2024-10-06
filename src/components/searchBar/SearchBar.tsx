@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import WeatherData from '../../api/WeatherDataAPI';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Dropdown } from 'react-native-element-dropdown';
+import { data } from '../../constants/types';
 
 export default function SearchBar() {
   const [city, setCity] = useState('');
@@ -38,10 +40,10 @@ export default function SearchBar() {
       
       if (isDuplicate) {
         console.log('City and Country pair already exists in AsyncStorage');
-        return; // Exit if duplicate found
+        return; 
       }
       
-      // Add new city and country pair to the array
+      
       data.push({ city, country });
       
       // Save updated data back to AsyncStorage
@@ -52,9 +54,31 @@ export default function SearchBar() {
     }
   };
 
+  
   return (
     <View style={styles.container}>
+
+      <Dropdown
+      style={styles.input}
+      data={data}
+      labelField="label"
+      valueField="value"
+      search
+       placeholder="Select Country"
+      searchPlaceholder="Search..."
+      value={country}
+      onChange={item => {
+        setCountry(item.value);
+      }}
+      />
       
+       {/* Input for Country */}
+       {/* <TextInput
+        style={styles.input}
+        placeholder="Enter Country"
+        value={country}
+        onChangeText={setCountry}
+      /> */}
       
       {/* Input for City */}
       <TextInput
@@ -64,13 +88,7 @@ export default function SearchBar() {
         onChangeText={setCity}
       />
       
-      {/* Input for Country */}
-      <TextInput
-        style={styles.input}
-        placeholder="Enter Country"
-        value={country}
-        onChangeText={setCountry}
-      />
+     
       
       {/* Search Button */}
       <TouchableOpacity style={styles.button} onPress={handleSearch}>
