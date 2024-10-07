@@ -42,8 +42,7 @@ export default function SearchBar() {
         console.log('City and Country pair already exists in AsyncStorage');
         return; 
       }
-      
-      
+       
       data.push({ city, country });
       
       // Save updated data back to AsyncStorage
@@ -71,24 +70,13 @@ export default function SearchBar() {
         setCountry(item.value);
       }}
       />
-      
-       {/* Input for Country */}
-       {/* <TextInput
-        style={styles.input}
-        placeholder="Enter Country"
-        value={country}
-        onChangeText={setCountry}
-      /> */}
-      
-      {/* Input for City */}
+
       <TextInput
         style={styles.input}
         placeholder="Enter City"
         value={city}
         onChangeText={setCity}
       />
-      
-     
       
       {/* Search Button */}
       <TouchableOpacity style={styles.button} onPress={handleSearch}>
@@ -98,18 +86,6 @@ export default function SearchBar() {
       {/* Loading Spinner */}
       {loading && <ActivityIndicator size="large" color="#007BFF" />}
 
-      {/* Display weather data */}
-      {/* {weather && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultText}>City: {weather.name}</Text>
-          <Text style={styles.resultText}>
-            Temperature: {(weather.main.temp - 273.15).toFixed(2)} °C
-          </Text>
-          <Text style={styles.resultText}>Weather: {weather.weather[0].description}</Text>
-        </View>
-      )} */}
-
-      {/* Display error message */}
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
